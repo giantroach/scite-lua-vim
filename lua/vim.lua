@@ -1,8 +1,11 @@
 -- vim like keybind function
 function vim()
-    local mode = "insert"
+    local mode = "normal"
     local lastKc = 0
     local vStartPos = 0
+    local numStack = ""
+    local cmdStack = ""
+    local cBuffer = {}
 
     -- switch to given mode
     function switchTo(nextMode)
@@ -18,6 +21,11 @@ function vim()
         elseif nextMode == "visual" then
             vStartPos = editor.CurrentPos
             print("-- visual --")
+
+        elseif nextMode == ":" then
+            cmdStack = ""
+            numStack = ""
+
         end
 
         if editor:AutoCActive() then
@@ -32,7 +40,7 @@ function vim()
     -- OnKey call back starts here
     --
     return function (kc, shift, ctrl, alt, xxx)
-        print("kc:" .. kc)
+--~         print("kc:" .. kc)
         lastKc = kc
 
 
@@ -55,6 +63,39 @@ function vim()
             end
 
             mode = "normal"
+            return true
+        end
+
+        -- --------------------------------
+        -- : mode
+        --
+        if mode == ":" then
+            if ctrl and kc == 91 then --[
+                switchTo("normal")
+                return true
+            end
+
+            if kc == 13 or (ctrl and kc == 77) then -- enter / C-m
+                local cmd = string.lower(table.concat(cBuffer))
+
+                if cmd == "emacs" then
+                    if activateOnkey("emacs") then
+                        print("")
+                        print("emacs activated")
+                        switchTo("normal")
+                        return true
+                    end
+                end
+
+                switchTo("normal")
+                print("")
+                print("Unknown command: "..cmd)
+                return true
+            end
+
+            table.insert(cBuffer, string.char(kc))
+            output:LineEnd()
+            output:InsertText(output.CurrentPos, string.lower(string.char(kc)))
             return true
         end
 
@@ -256,6 +297,14 @@ function vim()
                 return true
             end
 
+            -- :
+            if kc == 58 then
+                switchTo(":")
+                output:InsertText(-1, ":")
+                cBuffer = {}
+                return true
+            end
+
             -- go back to sane
             -- As I know SciTE only can use thin caret hence I treated i = a
             if kc == 73 or kc == 65 then -- 73 = i, 65 = a
@@ -272,4 +321,7 @@ end
 
 --add emacs to OnKey array
 vim = vim()
-addOnkey(vim)
+addOnkey({
+    label = "vim",
+    func = vim
+})
