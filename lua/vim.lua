@@ -323,9 +323,22 @@ function vim()
                 return true
             end
 
-            -- go back to sane
-            -- As I know SciTE only can use thin caret hence I treated i = a
-            if kc == 73 or kc == 65 then -- 73 = i, 65 = a
+            -- i
+            if kc == 73 then -- 73 = i
+                if shift then
+                    editor:Home()
+                end
+                switchTo("insert")
+                return true
+            end
+
+            -- a
+            if kc == 65 then -- 65 = a
+                if shift then
+                    editor:LineEnd()
+                else
+                    editor:CharRight()
+                end
                 switchTo("insert")
                 return true
             end
