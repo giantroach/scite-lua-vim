@@ -87,6 +87,24 @@ function vim()
                     end
                 end
 
+                if cmd == "w" then
+                    scite.MenuCommand(IDM_SAVE)
+                    print("")
+                    switchTo("normal")
+                    return true
+                end
+
+                if cmd == "wq" or cmd == "wq!" then
+                    scite.MenuCommand(IDM_SAVE)
+                    scite.MenuCommand(IDM_QUIT)
+                    return true
+                end
+
+                if cmd == "q" or cmd == "q!" then
+                    scite.MenuCommand(IDM_QUIT)
+                    return true
+                end
+
                 switchTo("normal")
                 print("")
                 print("Unknown command: "..cmd)
