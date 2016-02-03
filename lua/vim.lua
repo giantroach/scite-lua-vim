@@ -1,6 +1,7 @@
 -- vim like keybind function
 function vim()
     local mode = "normal"
+    local insertNormal = false
     local lastKc = 0
     local vStartPos = 0
     local numStack = ""
@@ -14,6 +15,7 @@ function vim()
         editor:GotoPos(pos)
 
         mode = nextMode
+        insertNormal = false
 
         if nextMode == "insert" then
             print("-- insert --")
@@ -26,6 +28,11 @@ function vim()
             cmdStack = ""
             numStack = ""
 
+        elseif nextMode == "insertNormal" then
+            print("-- insertNormal --")
+            mode = "normal"
+            insertNormal = true
+
         end
 
         if editor:AutoCActive() then
@@ -35,12 +42,22 @@ function vim()
         return true
     end
 
+    -- back to normal mode unless it is insertNormal
+    function backToNormal()
+        if insertNormal then
+            mode = "insert"
+            insertNormal = false
+        else
+            mode = "normal"
+        end
+    end
+
 
     -- --------------------------------
     -- OnKey call back starts here
     --
     return function (kc, shift, ctrl, alt, xxx)
---~         print("kc:" .. kc)
+        print("kc:" .. kc)
         lastKc = kc
 
 
@@ -58,13 +75,33 @@ function vim()
             -- dd
             if kc == 68 then
                 editor:LineCut()
-                mode = "normal"
+                backToNormal()
                 return true
             end
 
-            mode = "normal"
+            backToNormal()
             return true
         end
+
+
+        -- --------------------------------
+        -- z mode
+        --
+        if mode == "z" then
+            -- zz
+            if kc == 90 then
+                local line = editor:LineFromPosition(editor.CurrentPos)
+                local top = editor:DocLineFromVisible(editor.FirstVisibleLine)
+                local middle = top + editor.LinesOnScreen / 2
+                editor:LineScroll(0, line - middle)
+                backToNormal()
+                return true
+            end
+
+            backToNormal()
+            return true
+        end
+
 
         -- --------------------------------
         -- : mode
@@ -116,6 +153,7 @@ function vim()
             output:InsertText(output.CurrentPos, string.lower(string.char(kc)))
             return true
         end
+
 
         -- --------------------------------
         -- normal / visual mode
@@ -283,19 +321,24 @@ function vim()
                 return true
             end
 
-
             -- u
             if kc == 85 then
                 editor:Undo()
                 return true
             end
 
-
             -- v
             if kc == 86 then
                 switchTo("visual")
                 return true
             end
+
+            -- z
+            if kc == 90 then
+                switchTo("z")
+                return true
+            end
+
 
             -- o
             if kc == 79 then
@@ -346,11 +389,28 @@ function vim()
             return true
         end
 
+
+        -- --------------------------------
+        -- insert mode
+        --
+        if mode == "insert" then
+
+            -- --------------------------------
+            -- C combination
+            --
+            if ctrl then
+                if kc == 79 then -- 79 = o
+                    switchTo("insertNormal")
+                    return true
+                end
+            end
+        end
+
         return false
     end
 end
 
---add emacs to OnKey array
+--add vim to OnKey array
 vim = vim()
 addOnkey({
     label = "vim",
